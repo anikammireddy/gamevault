@@ -14,10 +14,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body className={spaceMono.className}>{children}</body>
+      <head>
+        {/* Cursive font for game titles */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className={spaceMono.className}>
+        {children}
+      </body>
     </html>
   );
 }
+

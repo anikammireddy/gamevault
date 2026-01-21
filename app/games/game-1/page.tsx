@@ -1,97 +1,149 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { get, set } from "idb-keyval";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-type SaveData = {
-  clicks: number;
-  best: number;
-  updatedAt: number;
-};
+type Player = "X" | "O";
+type Cell = Player | null;
 
-const SAVE_KEY = "gamevault:clicker:v1";
+const WIN_LINES = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6],
+];
 
-export default function ClickerGame() {
-  const [clicks, setClicks] = useState(0);
-  const [best, setBest] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+function getWinner(board: Cell[]): Player | null {
+  for (const [a, b, c] of WIN_LINES) {
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return board[a];
+    }
+  }
+  return null;
+}
 
-  // Load save (per device/browser)
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = (await get(SAVE_KEY)) as SaveData | undefined;
-        if (data) {
-          setClicks(data.clicks ?? 0);
-          setBest(data.best ?? 0);
-        }
-      } finally {
-        setLoaded(true);
-      }
-    })();
-  }, []);
+export default function TicTacToeGame() {
+  const router = useRouter(); // ✅ ADD THIS
 
-  // Save whenever state changes (after initial load)
-  useEffect(() => {
-    if (!loaded) return;
-    const data: SaveData = {
-      clicks,
-      best,
-      updatedAt: Date.now(),
-    };
-    set(SAVE_KEY, data);
-  }, [clicks, best, loaded]);
+  const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
+  const [turn, setTurn] = useState<Player>("X");
 
-  const onClick = () => {
-    const next = clicks + 1;
-    setClicks(next);
-    if (next > best) setBest(next);
-  };
-
-  const reset = async () => {
-    setClicks(0);
-    // keep best, or reset both—your choice; for now keep best
-    await set(SAVE_KEY, { clicks: 0, best, updatedAt: Date.now() } satisfies SaveData);
-  };
+  const winner = useMemo(() => getWinner(board), [board]);
+  const isFull = useMemo(() => board.every(Boolean), [board]);
+  const gameOver = Boolean(winner) || isFull;
 
   const statusText = useMemo(() => {
-    if (!loaded) return "Loading save…";
-    return "Progress saves automatically on this device (no login).";
-  }, [loaded]);
+    if (!gameOver) return `Turn: ${turn}`;
+    if (winner) return `${winner} wins! 💙`;
+    return "It’s a tie 💙";
+  }, [gameOver, winner, turn]);
+
+  const handleClick = (i: number) => {
+    if (gameOver || board[i]) return;
+
+    setBoard((prev) => {
+      const next = [...prev];
+      next[i] = turn;
+      return next;
+    });
+    setTurn(turn === "X" ? "O" : "X");
+  };
+
+  const reset = () => {
+    setBoard(Array(9).fill(null));
+    setTurn("X");
+  };
 
   return (
-    <main className="min-h-screen px-6 py-10">
-      <div className="mx-auto max-w-xl">
-        <h1 className="text-3xl font-bold">Clicker</h1>
-        <p className="mt-2 text-sm opacity-80">{statusText}</p>
+    <main
+      className="min-h-screen flex flex-col items-center justify-start px-6 py-12"
+      style={{
+        backgroundColor: "#FBCFE8",
+      }}
+    >
+      {/* ✅ BACK BUTTON (add this block) */}
+      <div className="w-full max-w-3xl">
+        <button
+          onClick={() => router.push("/")}
+          className="mb-6 rounded-full bg-white/70 px-5 py-2 text-sm font-semibold text-sky-400 shadow-sm hover:bg-white/90 active:translate-y-[1px]"
+        >
+          ← Back
+        </button>
+      </div>
 
-        <div className="mt-8 rounded-2xl border border-black/20 bg-white p-6 shadow-sm">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="text-sm opacity-70">Clicks</div>
-              <div className="text-5xl font-extrabold">{clicks}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm opacity-70">Best</div>
-              <div className="text-3xl font-bold">{best}</div>
-            </div>
-          </div>
+      {/* Title */}
+      <h1
+        className="text-center text-6xl font-bold text-sky-300"
+        style={{
+          fontFamily: '"Pacifico", cursive',
+        }}
+      >
+        Tic Tac Toe
+      </h1>
 
-          <button
-            onClick={onClick}
-            className="mt-6 w-full rounded-2xl border-2 border-black bg-white px-4 py-4 text-xl font-semibold active:translate-y-[1px]"
-          >
-            Tap me
-          </button>
+      {/* Status */}
+      <div className="mt-3 text-center text-xl font-semibold text-sky-300">
+        {statusText}
+      </div>
 
-          <button
-            onClick={reset}
-            className="mt-3 w-full rounded-2xl border border-black/30 bg-white px-4 py-3 text-sm opacity-80 hover:opacity-100"
-          >
-            Reset clicks (keeps best)
-          </button>
+      {/* Play again button (game over) */}
+      {gameOver && (
+        <button
+          onClick={reset}
+          className="mt-4 rounded-full bg-sky-300 px-8 py-3 text-lg font-bold text-pink-100 active:translate-y-[1px]"
+        >
+          Play again
+        </button>
+      )}
+
+      {/* Board */}
+      <div className="mt-10 flex justify-center">
+        <div
+          className="grid grid-cols-3 gap-6"
+          style={{
+            width: "520px",
+            maxWidth: "90vw",
+          }}
+        >
+          {board.map((cell, i) => (
+            <button
+              key={i}
+              onClick={() => handleClick(i)}
+              disabled={gameOver || !!cell}
+              className="aspect-square rounded-3xl transition active:translate-y-[1px]"
+              style={{
+                backgroundColor: cell ? "#7DD3FC" : "#DB2777",
+              }}
+            >
+              <span
+                className="flex h-full w-full items-center justify-center text-pink-100 font-extrabold"
+                style={{
+                  fontSize: "120px",
+                  lineHeight: 1,
+                  fontFamily:
+                    'ui-rounded, "SF Pro Rounded", system-ui, sans-serif',
+                }}
+              >
+                {cell ?? ""}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Restart (during game) */}
+      {!gameOver && (
+        <button
+          onClick={reset}
+          className="mt-10 rounded-full bg-white/70 px-6 py-3 text-base font-semibold text-sky-400 active:translate-y-[1px]"
+        >
+          Restart
+        </button>
+      )}
     </main>
   );
 }
