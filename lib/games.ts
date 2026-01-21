@@ -1,6 +1,6 @@
 export const GAMES = [
   { id: "game-1", name: "Tic-Tac-Toe" },
-  { id: "game-2", name: "TBD 2" },
+  { id: "game-2", name: "Name The Countries" },
   { id: "game-3", name: "TBD 3" },
   { id: "game-4", name: "TBD 4" },
   { id: "game-5", name: "TBD 5" },
