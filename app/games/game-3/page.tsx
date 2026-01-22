@@ -197,7 +197,7 @@ export default function FlappyBirdPage() {
           // Handle spacebar and up arrow
           p.keyPressed = () => {
             if (
-              (p.keyCode === p.UP_ARROW || p.key === " ") &&
+              ((p.key === "ArrowUp") || (p.key === " ")) &&
               gameStarted &&
               !gameOver
             ) {
