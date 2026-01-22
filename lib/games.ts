@@ -1,8 +1,8 @@
 export const GAMES = [
   { id: "game-1", name: "Tic-Tac-Toe" },
   { id: "game-2", name: "Name The Countries" },
-  { id: "game-3", name: "TBD 3" },
-  { id: "game-4", name: "TBD 4" },
+  { id: "game-3", name: "Flappy Bird" },
+  { id: "game-4", name: "Stack" },
   { id: "game-5", name: "TBD 5" },
 
   { id: "game-6", name: "TBD 6" },

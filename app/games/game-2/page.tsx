@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import type p5 from "p5";
+import { useRouter } from "next/navigation";
 
 type SavedState = {
   guessed: string[]; // lowercased country names
@@ -76,6 +77,7 @@ function formatTime(ms: number) {
 export default function Game2CountriesPage() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const p5Ref = useRef<p5 | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
@@ -94,10 +96,7 @@ export default function Game2CountriesPage() {
       };
 
       // ---- GAME DATA ----
-      const countryData: Record<
-        string,
-        { continent: string; x: number; y: number }
-      > = {
+      const countryData: Record<string, { continent: string; x: number; y: number }> = {
         // North America
         Canada: { continent: "North America", x: 0.131, y: 0.169 },
         USA: { continent: "North America", x: 0.141, y: 0.315 },
@@ -350,6 +349,7 @@ export default function Game2CountriesPage() {
         let inputEl!: HTMLInputElement;
         let pauseBtn!: HTMLButtonElement;
         let restartBtn!: HTMLButtonElement;
+        let backBtn!: HTMLButtonElement;
 
         let messageText = "";
         let messageColor: p5.Color;
@@ -385,15 +385,19 @@ export default function Game2CountriesPage() {
           }
         };
 
+        const stopTimerIfRunning = () => {
+          if (state.running) setRunning(false);
+        };
+
+
         p.setup = () => {
           p.createCanvas(1400, 2400);
 
-// Add this:
-p.loadImage(
-  "/eflyj4550khe1.jpeg",
-  (img) => { worldMap = img; },
-  () => { worldMap = undefined; }
-);
+          p.loadImage(
+            "/eflyj4550khe1.jpeg",
+            (img) => { worldMap = img; },
+            () => { worldMap = undefined; }
+          );
 
           // populate continents
           Object.keys(countryData).forEach((country) => {
@@ -409,6 +413,32 @@ p.loadImage(
           // ===== HTML UI (overlay) =====
           const host = hostRef.current!;
           host.style.position = "relative";
+
+          // Back button
+          backBtn = document.createElement("button");
+          backBtn.textContent = "← Back";
+          Object.assign(backBtn.style, {
+            position: "absolute",
+            left: "20px",
+            top: "80px",
+            width: "80px",
+            height: "35px",
+            fontSize: "16px",
+            fontWeight: "600",
+            backgroundColor: "#6c757d",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            zIndex: "10",
+          } as CSSStyleDeclaration);
+          host.appendChild(backBtn);
+
+          backBtn.addEventListener("click", () => {
+            stopTimerIfRunning();
+            router.push("/");
+          });
+
 
           // Input
           inputEl = document.createElement("input");
@@ -497,15 +527,19 @@ p.loadImage(
           // Ensure cleanup when p5 removes
           const originalRemove = (p as any).remove?.bind(p);
           (p as any).remove = () => {
+            stopTimerIfRunning();
             document.removeEventListener("visibilitychange", pauseIfHidden);
             window.removeEventListener("beforeunload", pauseIfHidden);
 
             inputEl?.remove();
             pauseBtn?.remove();
             restartBtn?.remove();
+            backBtn?.remove();
 
             if (originalRemove) originalRemove();
           };
+
+
         };
 
         p.draw = () => {
@@ -820,10 +854,10 @@ p.loadImage(
       };
 
       try {
-  p5Ref.current = new P5(sketch, hostRef.current);
-} catch (error) {
-  console.error("Failed to initialize p5:", error);
-}
+        p5Ref.current = new P5(sketch, hostRef.current);
+      } catch (error) {
+        console.error("Failed to initialize p5:", error);
+      }
     })();
 
     return () => {
@@ -834,7 +868,7 @@ p.loadImage(
       // extra safety: clear any leftover HTML in the host
       if (hostRef.current) hostRef.current.innerHTML = "";
     };
-  }, []);
+  }, [router]);
 
   return (
     <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
